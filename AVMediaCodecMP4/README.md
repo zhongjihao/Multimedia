@@ -1,3 +1,0 @@
-AVMediaCodecMP4工程 \
-Android平台Camera采集预览nv21格式数据，AudioRecord采集音频pcm数据，使用MediaCodec分别进行h264和AAC硬编码，通过MediaMuxer合成MP4
-
