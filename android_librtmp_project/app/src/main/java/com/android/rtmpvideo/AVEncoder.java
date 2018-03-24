@@ -548,7 +548,7 @@ public class AVEncoder {
                 outputBufferIndex = aEncoder.dequeueOutputBuffer(aBufferInfo, 0);
                 //编码结束的标志
                 if ((aBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    Log.d(TAG, "=====zhongjihao=====Recv Audio Encoder===BUFFER_FLAG_END_OF_STREAM=====" );
+                    Log.e(TAG, "=====zhongjihao=====Recv Audio Encoder===BUFFER_FLAG_END_OF_STREAM=====" );
                     audioEncoderLoop = false;
                     audioEncoderThread.interrupt();
                     return;

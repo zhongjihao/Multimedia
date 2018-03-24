@@ -32,29 +32,35 @@ public class RtmpPublisher {
     }
 
     public void sendSpsAndPps(final byte[] sps, final int spsLen, final byte[] pps, final int ppsLen, int timeOffset){
-        this.timeOffset = timeOffset;
-        RtmpJni.sendSpsAndPps(cPtr,sps, spsLen, pps, ppsLen);
+        if(cPtr != 0){
+            this.timeOffset = timeOffset;
+            RtmpJni.sendSpsAndPps(cPtr,sps, spsLen, pps, ppsLen);
+        }
     }
 
     public void sendAVCFrame(final byte[] frame, final int len, final int timestamp){
         if(timestamp - timeOffset < 0)
             return;
-        RtmpJni.sendVideoFrame(cPtr,frame, len, timestamp);
+        if(cPtr != 0)
+            RtmpJni.sendVideoFrame(cPtr,frame, len, timestamp);
     }
 
     public void sendAacSpec(final byte[] data, final int len){
-        RtmpJni.sendAacSpec(cPtr,data, len);
+        if(cPtr != 0)
+            RtmpJni.sendAacSpec(cPtr,data, len);
     }
 
     public void sendAacData(final byte[] data, final int len, final int timestamp){
         if(timestamp - timeOffset < 0)
             return;
-        RtmpJni.sendAacData(cPtr,data, len, timestamp);
+        if(cPtr != 0)
+            RtmpJni.sendAacData(cPtr,data, len, timestamp);
     }
 
     public void stopRtmpPublish(){
         try {
-            RtmpJni.stopRtmp(cPtr);
+            if(cPtr != 0)
+                RtmpJni.stopRtmp(cPtr);
         }finally {
             cPtr = 0;
             timeOffset = 0;

@@ -24,6 +24,10 @@ public class MediaPublisher {
 
     private volatile boolean loop;
 
+    private ConnectRtmpServerCb rtmpConnectCb;
+    public interface ConnectRtmpServerCb{
+        public void onConnectRtmp(final int ret);
+    }
 
     public static MediaPublisher newInstance(String url,String log) {
         return new MediaPublisher(url,log);
@@ -32,6 +36,10 @@ public class MediaPublisher {
     private MediaPublisher(String url,String log){
         rtmpUrl = url;
         rtmpLogPath = log;
+    }
+
+    public void setRtmpConnectCb( ConnectRtmpServerCb rtmpConnectCb){
+        this.rtmpConnectCb = rtmpConnectCb;
     }
 
     public void initMediaPublish() {
@@ -115,6 +123,7 @@ public class MediaPublisher {
             public void run() {
                 //初始化
                 int ret = mRtmpPublisher.init(rtmpUrl, rtmpLogPath);
+                rtmpConnectCb.onConnectRtmp(ret);
                 if (ret == 0) {
                     Log.e(TAG, "===zhongjihao=====Rtmp连接失败====");
                     return;

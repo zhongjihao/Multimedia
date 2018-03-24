@@ -1,14 +1,8 @@
 package com.android.rtmpvideo;
 
-import android.Manifest;
-import android.os.Build;
 import android.os.Environment;
-import android.support.v4.content.ContextCompat;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
@@ -19,7 +13,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, VideoGather.CameraOperateCallback{
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, VideoGather.CameraOperateCallback,MediaPublisher.ConnectRtmpServerCb{
     private final static String TAG = "MainActivity";
     private Button btnStart;
     private SurfaceView mSurfaceView;
@@ -27,11 +21,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private SurfacePreview mSurfacePreview;
     private MediaPublisher mediaPublisher;
     private boolean isStarted;
+    private boolean isRtmpConnected = false;
     private static final String rtmpUrl = "rtmp://192.168.1.101:1935/zhongjihao/myh264";
-
-    // 要申请的权限
-    private String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA,
-            Manifest.permission.RECORD_AUDIO};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,53 +46,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mSurfaceHolder.addCallback(mSurfacePreview);
         btnStart.setOnClickListener(this);
 
-        // 版本判断。当手机系统大于 23 时，才有必要去判断权限是否获取
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // 检查该权限是否已经获取
-            boolean permission = false;
-            for (int i = 0; i < permissions.length; i++) {
-                int result = ContextCompat.checkSelfPermission(this, permissions[i]);
-                // 权限是否已经 授权 GRANTED---授权  DINIED---拒绝
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    permission = false;
-                    break;
-                } else
-                    permission = true;
-            }
-            if(!permission){
-                // 如果没有授予权限，就去提示用户请求
-                ActivityCompat.requestPermissions(this,
-                        permissions, 100);
-            }
-
-        }
         String logPath = Environment
                 .getExternalStorageDirectory()
                 + "/" + "zhongjihao/rtmp.log";
         mediaPublisher = MediaPublisher.newInstance(rtmpUrl,logPath);
+        mediaPublisher.setRtmpConnectCb(this);
         mediaPublisher.initMediaPublish();
     }
 
     private void codecToggle() {
         if (isStarted) {
             isStarted = false;
-            //停止编码 先要停止编码，然后停止采集
-            mediaPublisher.stopEncoder();
-            //停止音频采集
-            mediaPublisher.stopAudioGather();
-            //停止发布
-            mediaPublisher.stopRtmpPublish();
+            if(isRtmpConnected){
+                //停止编码 先要停止编码，然后停止采集
+                mediaPublisher.stopEncoder();
+                //停止音频采集
+                mediaPublisher.stopAudioGather();
+                //断开RTMP连接
+                mediaPublisher.stopRtmpPublish();
+            }
         } else {
             isStarted = true;
-            //采集音频
-            mediaPublisher.startAudioGather();
-            //初始化音频编码器
-            mediaPublisher.initAudioEncoder();
-            //启动编码
-            mediaPublisher.startEncoder();
-            //发布
+            //连接Rtmp流媒体服务器
             mediaPublisher.startRtmpPublish();
-
         }
         btnStart.setText(isStarted ? "停止" : "开始");
     }
@@ -111,15 +78,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onDestroy();
         if(isStarted){
             isStarted = false;
-            //停止编码 先要停止编码，然后停止采集
-            mediaPublisher.stopEncoder();
-            //停止音频采集
-            mediaPublisher.stopAudioGather();
-            //停止发布
-            mediaPublisher.stopRtmpPublish();
+            if(isRtmpConnected){
+                //停止编码 先要停止编码，然后停止采集
+                mediaPublisher.stopEncoder();
+                //停止音频采集
+                mediaPublisher.stopAudioGather();
+                //断开RTMP连接
+                mediaPublisher.stopRtmpPublish();
+            }
         }
         //释放编码器
-        mediaPublisher.release();
+        if(mediaPublisher != null)
+            mediaPublisher.release();
         mediaPublisher = null;
         VideoGather.getInstance().doStopCamera();
     }
@@ -156,21 +126,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == 100
-                && permissions.length == 3
-                && permissions[0].equals(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                && permissions[1].equals(Manifest.permission.CAMERA)
-                && permissions[2].equals(Manifest.permission.RECORD_AUDIO)
-                && grantResults[0] ==PackageManager.PERMISSION_GRANTED
-                && grantResults[1] == PackageManager.PERMISSION_GRANTED
-                && grantResults[2] ==PackageManager.PERMISSION_GRANTED
-                ) {
-
+    public void onConnectRtmp(final int ret) {
+        isRtmpConnected = ret == 0 ? false : true;
+        if(ret != 0){
+            //采集音频
+            mediaPublisher.startAudioGather();
+            //初始化音频编码器
+            mediaPublisher.initAudioEncoder();
+            //启动编码
+            mediaPublisher.startEncoder();
         }
+        runOnUiThread(new Runnable(){
+            @Override
+            public void run() {
+                if(ret == 0){
+                    Log.e(TAG, "===zhongjihao=====Rtmp连接失败====");
+                    //更新UI
+                    Toast.makeText(MainActivity.this,"RTMP流媒体服务器连接失败,请检测网络或服务器是否启动!",Toast.LENGTH_LONG).show();
+                }
+            }
+        });
     }
-
-
 }
