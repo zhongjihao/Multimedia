@@ -7,7 +7,10 @@ srs流媒体服务器的搭建部署： \
    
    
    第二步，配置SRS \
-     ./configure --prefix=/usr/local/srs --with-ssl --with-hls --with-hds --with-dvr --with-nginx --with-http-callback --with-http-server --with-stream-caster --with-http-api --with-ffmpeg --with-transcode --with-ingest --with-stat --with-librtmp --with-research --with-utest --with-gperf --with-gprof
+     ./configure --prefix=/usr/local/srs --with-ssl --with-hls --with-hds --with-dvr --with-nginx \
+     --with-http-callback --with-http-server --with-stream-caster --with-http-api --with-ffmpeg \
+     --with-transcode --with-ingest --with-stat --with-librtmp --with-research --with-utest \
+     --with-gperf --with-gprof
    
    第三步 编译安装 \
      make \
